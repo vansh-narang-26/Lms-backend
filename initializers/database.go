@@ -17,9 +17,9 @@ func ConnectDatabase() {
 
 	// Auto Migrate the schemas
 	database.AutoMigrate(&models.Library{}, &models.User{}) // Will libraries,users in the database
-	// database.AutoMigrate(&models.BookInventory{})
-	// database.AutoMigrate(&models.RequestEvent{})
-	// database.AutoMigrate(&models.IssueRegistry{})
+	database.AutoMigrate(&models.BookInventory{})
+	database.AutoMigrate(&models.RequestEvent{})
+	database.AutoMigrate(&models.IssueRegistry{})
 
 	DB = database
 }

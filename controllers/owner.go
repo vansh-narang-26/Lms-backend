@@ -19,8 +19,8 @@ func CreateLibrary(c *gin.Context) {
 
 	//clib is creation of library
 	var clib models.Library
-
-	if err := c.ShouldBindJSON(&clib); err != nil {
+	// fmt.Println(clib)
+	if err := c.ShouldBindBodyWithJSON(&clib); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"Error": err.Error(),
 		})

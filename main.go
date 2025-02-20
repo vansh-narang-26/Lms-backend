@@ -22,7 +22,12 @@ func main() {
 	protectedRoutes := router.Group("/api")
 	protectedRoutes.Use(middleware.UserRetriveCookie)
 	{
-		protectedRoutes.POST("/create-library", controllers.CreateLibrary)
+		library := protectedRoutes.Group("/library")
+		library.Use(middleware.OwnerOnly)
+		{
+			library.POST("/create-library", controllers.CreateLibrary)
+		}
+
 	}
 
 	// protectedRoutes := router.Group("/api")

@@ -9,6 +9,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var nrole string
+
 func UserRetriveCookie(c *gin.Context) {
 
 	valid := ValidateCookie(c)
@@ -23,11 +25,37 @@ func UserRetriveCookie(c *gin.Context) {
 		} else {
 			c.Set("id", userId)
 		}
-		if role != "owner" {
-			//fmt.Println(role)
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Only owner can create the library"})
-			c.Abort()
-		}
+		nrole = role
+		// if role != "owner" {
+		// 	//fmt.Println(role)
+		// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "Only owner can create the library"})
+		// 	c.Abort()
+		// }
+	}
+	c.Next()
+}
+func OwnerOnly(c *gin.Context) {
+	if nrole != "owner" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Only owner can create the library"})
+		c.Abort()
+		return
+	}
+	c.Next()
+}
+func AdminOnly(c *gin.Context) {
+	if nrole == "admin" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Only admin has the access to do so",
+		})
+		return
+	}
+	c.Next()
+}
+func ReaderOnly(c *gin.Context) {
+	if nrole == "reader" {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Only admin has the access to do so",
+		})
 	}
 	c.Next()
 }

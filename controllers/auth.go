@@ -4,12 +4,13 @@ import (
 	"lms/backend/initializers"
 	"lms/backend/models"
 	"net/http"
-	"os"
-	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 )
+
+var secretKey = []byte("SECRET")
+
 func CreateUser(c *gin.Context) {
 	var user models.User
 
@@ -60,33 +61,29 @@ func LoginUser(c *gin.Context) {
 		c.JSON(http.StatusBadGateway, gin.H{
 			"Error": "No user found",
 		})
+		return
 	}
+	claims := jwt.MapClaims{}
+	claims["id"] = userFound.ID
+	claims["role"] = userFound.Role
 
-	generateToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"role": userFound.Role,
-		"id":   userFound.ID,
-		"exp":  time.Now().Add(time.Hour * 24).Unix(),
-	})
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	newToken, _ := token.SignedString(secretKey)
 
-	// fmt.Println(generateToken)
-
-	token, err := generateToken.SignedString([]byte(os.Getenv("SECRET")))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to generate token"})
-	}
+	c.SetCookie("Authorise", newToken, 3600, "", "", false, true)
 
 	c.JSON(200, gin.H{
 		"message": "Logged in successfully",
-		"token":   token,
+		"token":   newToken,
 	})
 }
 
-func GetUsers(context *gin.Context) {
-	var user []models.User
-	err := initializers.DB.Find(&user)
-	if err != nil {
-		context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
-		return
-	}
-	context.JSON(http.StatusOK, user)
-}
+// func GetUsers(context *gin.Context) {
+// 	var user []models.User
+// 	err := initializers.DB.Find(&user)
+// 	if err != nil {
+// 		context.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err})
+// 		return
+// 	}
+// 	context.JSON(http.StatusOK, user)
+// }

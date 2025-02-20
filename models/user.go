@@ -10,10 +10,10 @@ import "time"
 
 type User struct {
 	ID            uint     `json:"id" gorm:"primary_key"`
-	Name          string   `json:"name"`
-	Email         string   `json:"email"`
+	Name          string   `json:"name" gorm:"not null"`
+	Email         string   `json:"email" gorm:"unique;not null"`
 	ContactNumber string   `json:"contact_no"`
-	Role          string   `json:"role" binding:"oneof=admin reader owner"`
+	Role          string   `json:"role" binding:"oneof=admin reader owner" gorm:"not null"`
 	Library       *Library `gorm:"foreignKey:LibID"`
 	LibID         uint     `json:"lib_id"`
 }
@@ -24,14 +24,9 @@ type LoginUser struct {
 }
 
 type Library struct {
-	ID   uint `json:"id" gorm:"primary_key"`
-	Name string
+	ID   uint   `json:"id" gorm:"primary_key"`
+	Name string `json:"name" binding:"required" gorm:"unique;not null"`
 }
-
-// type Library struct {
-//     ID   uint   `gorm:"primaryKey" json:"id"`
-//     Name string `gorm:"unique;not null" json:"name"`
-// }
 
 //	type User struct {
 //	    ID            uint   `gorm:"primaryKey" json:"id"`

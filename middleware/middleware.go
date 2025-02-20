@@ -44,9 +44,8 @@ func OwnerOnly(c *gin.Context) {
 }
 func AdminOnly(c *gin.Context) {
 	if nrole != "admin" {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Only admin has the access to do so",
-		})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Only admin has the access to do so"})
+		c.Abort()
 		return
 	}
 	c.Next()
@@ -56,6 +55,8 @@ func ReaderOnly(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "Only admin has the access to do so",
 		})
+		c.Abort()
+		return
 	}
 	c.Next()
 }

@@ -28,6 +28,13 @@ func main() {
 			library.POST("/create-library", controllers.CreateLibrary)
 		}
 
+		admin := protectedRoutes.Group("/admin")
+		admin.Use(middleware.AdminOnly)
+		{
+			admin.POST("/add-book", controllers.AddBook)
+			admin.POST("/remove-book/:id", controllers.RemoveBook)
+			admin.PUT("/update-book/:id", controllers.UpdateBook)
+		}
 	}
 
 	// protectedRoutes := router.Group("/api")

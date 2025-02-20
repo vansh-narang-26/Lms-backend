@@ -43,7 +43,7 @@ func OwnerOnly(c *gin.Context) {
 	c.Next()
 }
 func AdminOnly(c *gin.Context) {
-	if nrole == "admin" {
+	if nrole != "admin" {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "Only admin has the access to do so",
 		})
@@ -52,7 +52,7 @@ func AdminOnly(c *gin.Context) {
 	c.Next()
 }
 func ReaderOnly(c *gin.Context) {
-	if nrole == "reader" {
+	if nrole != "reader" {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "Only admin has the access to do so",
 		})
@@ -65,7 +65,7 @@ func RetriveJwtToken(c *gin.Context) (int, string, error) {
 		return 0, "", errors.New("cookie not found")
 	}
 
-	fmt.Println("Cookie:", cookie)
+	// fmt.Println("Cookie:", cookie)
 	token, err := jwt.Parse(cookie, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("invalid signing method")

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"lms/backend/initializers"
 	"lms/backend/models"
 	"net/http"
@@ -20,6 +21,7 @@ func CreateUser(c *gin.Context) {
 		})
 		return
 	}
+	fmt.Println(user)
 
 	var exisitingUser models.User
 
@@ -36,6 +38,7 @@ func CreateUser(c *gin.Context) {
 		Email:         user.Email,
 		ContactNumber: user.ContactNumber,
 		Role:          user.Role,
+		LibID:         user.LibID,
 	}
 
 	initializers.DB.Create(&cuser)

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"lms/backend/initializers"
 	"lms/backend/models"
 	"net/http"
@@ -86,10 +87,9 @@ func AddBook(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
 	//Checking book exists with the same ISBN or not if exists increase the count by 1
 	var existingBook models.BookInventory
-	if err := initializers.DB.Where("isbn = ?", bookInput.ISBN).First(&existingBook).Error; err == nil {
+	if err := initializers.DB.Where("isbn = ? AND lib_id=?", bookInput.ISBN, adminUser.LibID).First(&existingBook).Error; err == nil {
 		// If book exists, increase the total copies count
 		existingBook.TotalCopies += 1
 		existingBook.AvailableCopies += 1
@@ -98,6 +98,16 @@ func AddBook(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "Book copies updated successfully", "book": existingBook, "email": email})
+		return
+	}
+
+	//check for same isbn doesnt exist
+	fmt.Println(bookInput.ISBN)
+	if err := initializers.DB.Where("isbn=?", bookInput.ISBN).Find(&existingBook).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			// "Error":   err.Error(),
+			"Message": "Same isbn already exists u cant add book",
+		})
 		return
 	}
 
@@ -112,10 +122,11 @@ func AddBook(c *gin.Context) {
 		AvailableCopies: 1,
 		LibID:           adminUser.LibID,
 	}
+	fmt.Println(adminUser.LibID)
 
 	//Book created and now adding to the DB
 	if err := initializers.DB.Create(&newBook).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to add book"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 

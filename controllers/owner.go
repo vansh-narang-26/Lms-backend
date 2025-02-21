@@ -127,7 +127,7 @@ func CreateAdmin(c *gin.Context) {
 		Email:         cadmin.Email,
 		ContactNumber: cadmin.ContactNumber,
 		Role:          "admin",
-		LibID:         userFound.LibID, //giving some id to admin as of the owner
+		LibID:         userFound.LibID, //giving same id to admin as of the owner
 	}
 	initializers.DB.Create(&newUser)
 

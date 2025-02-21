@@ -4,6 +4,7 @@ import (
 	"lms/backend/initializers"
 	"lms/backend/models"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -188,3 +189,97 @@ func ListRequests(c *gin.Context) {
 	})
 
 }
+
+type UpdateRequest struct {
+	RequestType  string     `json:"request_type"`
+	ApprovalDate *time.Time `json:"approval_date,omitempty"`
+	ApproverID   *uint      `json:"approver_id,omitempty"`
+}
+
+func HandleRequest(c *gin.Context) {
+	adminID, _ := c.Get("id")
+	//	fmt.Println(adminID)
+
+	var adminUser models.User
+	if err := initializers.DB.Where("id = ? AND role = ?", adminID, "admin").First(&adminUser).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Admin access required"})
+		return
+	}
+
+	//extract the request id and check its availablity or not
+	requestId := c.Param("id")
+	//fmt.Println(requestId)
+	var request models.RequestEvent
+
+	if err := initializers.DB.Where("req_id=?", requestId).Find(&request).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Error":   err.Error(),
+			"Message": "Couldnot find the request with this id",
+		})
+		return
+	}
+	//time to extract bookId from request id
+	bookId := request.BookID
+	//fmt.Println(bookId)
+
+	var bookexists models.RequestEvent
+	if err := initializers.DB.Where("book_id=?", bookId).Find(&bookexists).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Error":   err.Error(),
+			"Message": "Couldnt find the book id with this isbn",
+		})
+		return
+	}
+
+	// readerID := request.ReaderID
+	// fmt.Println(readerID)
+
+	var handlereq UpdateRequest
+
+	if err := c.ShouldBindJSON(&handlereq); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Error": err.Error(),
+		})
+		return
+	}
+
+	//time to update the bookrequest
+	bookexists.RequestType = handlereq.RequestType
+	bookexists.ApprovalDate = &time.Time{}
+	bookexists.ApproverID = &adminUser.ID
+
+	initializers.DB.Save(&bookexists)
+	// c.JSON(http.StatusOK, bookexists)
+	c.JSON(http.StatusAccepted, gin.H{
+		"message":      "updation successfully done",
+		"updated book": bookexists,
+	})
+
+	//now setup the issue registry accordingly
+	// var IssueReg models.IssueRegistry
+
+	issueReg := models.IssueRegistry{
+		ISBN:               bookId,
+		ReaderID:           request.ReaderID,
+		IssueApproverID:    adminUser.ID,
+		IssueStatus:        "Issued",
+		ExpectedReturnDate: time.Now(), //need to change
+	}
+	initializers.DB.Create(&issueReg)
+
+	c.JSON(http.StatusCreated, gin.H{
+		"Message":   "Issue registry created successfully",
+		"Issue reg": issueReg,
+	})
+
+}
+
+// IssueID            uint       `gorm:"primaryKey" json:"issue_id"`
+// 	ISBN               string     `json:"isbn"`
+// 	ReaderID           uint       `json:"reader_id"`
+// 	IssueApproverID    uint       `json:"issue_approver_id"`
+// 	IssueStatus        string     `json:"issue_status"` // Issued or Returned
+// 	IssueDate          time.Time  `json:"issue_date"`
+// 	ExpectedReturnDate time.Time  `json:"expected_return_date"`
+// 	ReturnDate         *time.Time `json:"return_date,omitempty"`
+// 	ReturnApproverID   *uint      `json:"return_approver_id,omitempty"`

@@ -40,6 +40,7 @@ func main() {
 		reader.Use(middleware.ReaderOnly)
 		{
 			reader.GET("/search-books", controllers.SearchBooks)
+			reader.POST("/raise-request/:id", controllers.RaiseIssueRequest)
 		}
 	}
 

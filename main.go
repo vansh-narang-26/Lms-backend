@@ -36,6 +36,11 @@ func main() {
 			admin.DELETE("/:id", controllers.RemoveBook) // Only need to
 			admin.PUT("/:id", controllers.UpdateBook)    // Only need to update with the id
 		}
+		reader := protectedRoutes.Group("/reader")
+		reader.Use(middleware.ReaderOnly)
+		{
+			reader.GET("/search-books", controllers.SearchBooks)
+		}
 	}
 
 	// protectedRoutes := router.Group("/api")

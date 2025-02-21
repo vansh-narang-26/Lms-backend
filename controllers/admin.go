@@ -172,10 +172,3 @@ func UpdateBook(c *gin.Context) {
 	c.JSON(http.StatusOK, book)
 }
 
-// // SearchBooks enables searching by title, authors, or publisher.
-// func SearchBooks(c *gin.Context) {
-//     query := c.Query("q")
-//     var books []models.Book
-//     config.DB.Where("title ILIKE ? OR authors ILIKE ? OR publisher ILIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%").Find(&books)
-//     c.JSON(http.StatusOK, books)
-// }

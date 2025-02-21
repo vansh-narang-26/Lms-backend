@@ -35,6 +35,7 @@ func main() {
 			admin.POST("/add-book", controllers.AddBook)
 			admin.DELETE("/:id", controllers.RemoveBook) // Only need to
 			admin.PUT("/:id", controllers.UpdateBook)    // Only need to update with the id
+			admin.GET("/list-requests",controllers.ListRequests)
 		}
 		reader := protectedRoutes.Group("/reader")
 		reader.Use(middleware.ReaderOnly)

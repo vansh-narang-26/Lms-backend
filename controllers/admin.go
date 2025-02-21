@@ -172,3 +172,19 @@ func UpdateBook(c *gin.Context) {
 	c.JSON(http.StatusOK, book)
 }
 
+func ListRequests(c *gin.Context) {
+	// var onerequest models.RequestEvent
+	var requests []models.RequestEvent
+
+	if err := initializers.DB.Where("request_type=?", "Requested").Find(&requests).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Error":   err.Error(),
+			"Message": "Couldnt find the requests",
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"Message": requests,
+	})
+
+}

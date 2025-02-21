@@ -19,6 +19,7 @@ func SearchBooks(c *gin.Context) {
 			"Error":   err.Error(),
 			"Message": "No book found",
 		})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"Books": books,
@@ -71,7 +72,7 @@ func RaiseIssueRequest(c *gin.Context) {
 		return
 	}
 	// var request models.RequestEvent
-
+	// t:=time.Now
 	crequest := models.RequestEvent{
 		BookID:      isbn,
 		ReaderID:    user.ID,

@@ -18,12 +18,13 @@ func UserRetriveCookie(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not logged in"})
 		c.Abort()
 	} else {
-		userId, role, err := RetriveJwtToken(c)
+		userId, role, email, err := RetriveJwtToken(c)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			c.Abort()
 		} else {
 			c.Set("id", userId)
+			c.Set("email", email)
 		}
 		nrole = role
 		// if role != "owner" {
@@ -36,7 +37,7 @@ func UserRetriveCookie(c *gin.Context) {
 }
 func OwnerOnly(c *gin.Context) {
 	if nrole != "owner" {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Only owner can create the library"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Only owner has the access to do so"})
 		c.Abort()
 		return
 	}
@@ -60,10 +61,10 @@ func ReaderOnly(c *gin.Context) {
 	}
 	c.Next()
 }
-func RetriveJwtToken(c *gin.Context) (int, string, error) {
+func RetriveJwtToken(c *gin.Context) (int, string, string, error) {
 	cookie, err := c.Cookie("Authorise")
 	if err != nil {
-		return 0, "", errors.New("cookie not found")
+		return 0, "", "", errors.New("cookie not found")
 	}
 
 	// fmt.Println("Cookie:", cookie)
@@ -76,20 +77,21 @@ func RetriveJwtToken(c *gin.Context) (int, string, error) {
 
 	if err != nil {
 		fmt.Println("Token parse error:", err)
-		return 0, "", err
+		return 0, "", "", err
 	}
 
 	fmt.Println(token)
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
 		userId, okId := claims["id"].(float64)
 		role, okRole := claims["role"].(string)
-		// fmt.Println(userId, role)
-		if !okId || !okRole {
-			return 0, "", fmt.Errorf("invalid claims")
+		email, okEmail := claims["email"].(string)
+		// fmt.Println("Email", email)
+		if !okId || !okRole || !okEmail {
+			return 0, "", "", fmt.Errorf("invalid claims")
 		}
-		return int(userId), role, nil
+		return int(userId), role, email, nil
 	} else {
-		return 0, "", fmt.Errorf("invalid token")
+		return 0, "", "", fmt.Errorf("invalid token")
 	}
 }
 func ValidateCookie(c *gin.Context) bool {

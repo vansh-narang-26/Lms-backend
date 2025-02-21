@@ -9,13 +9,14 @@ package models
 import "time"
 
 type User struct {
-	ID            uint     `json:"id" gorm:"primary_key"`
-	Name          string   `json:"name" gorm:"not null"`
-	Email         string   `json:"email" gorm:"unique;not null"`
-	ContactNumber string   `json:"contact_no"`
-	Role          string   `json:"role" binding:"oneof=admin reader owner" gorm:"not null"`
-	Library       *Library `gorm:"foreignKey:LibID"`
-	LibID         uint     `json:"lib_id"`
+	ID            uint   `json:"id" gorm:"primary_key"`
+	Name          string `json:"name" gorm:"not null"`
+	Email         string `json:"email" gorm:"unique;not null"`
+	ContactNumber string `json:"contact_no"`
+	// Role          string   `json:"role" binding"oneof=admin reader owner" gorm:"not null"`
+	Role    string   `json:"role" gorm:"not null"`
+	Library *Library `gorm:"foreignKey:LibID"`
+	LibID   uint     `json:"lib_id"`
 }
 
 type LoginUser struct {
@@ -25,7 +26,7 @@ type LoginUser struct {
 
 type Library struct {
 	ID   uint   `json:"id" gorm:"primary_key"`
-	Name string `json:"name" binding:"required" gorm:"unique;not null"`
+	Name string `json:"name" gorm:"unique;not null"`
 }
 
 //	type User struct {

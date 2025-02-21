@@ -66,6 +66,7 @@ func LoginUser(c *gin.Context) {
 	claims := jwt.MapClaims{}
 	claims["id"] = userFound.ID
 	claims["role"] = userFound.Role
+	claims["email"] = userFound.Email
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	newToken, _ := token.SignedString(secretKey)
@@ -75,6 +76,7 @@ func LoginUser(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"message": "Logged in successfully",
 		"token":   newToken,
+		"role":    userFound.Role,
 	})
 }
 

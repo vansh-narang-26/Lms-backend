@@ -16,8 +16,8 @@ func main() {
 	publicRoutes := router.Group("/api")
 	{
 
-		publicRoutes.POST("/create-user", controllers.CreateUser)
-		publicRoutes.POST("/login", controllers.LoginUser)
+		publicRoutes.POST("/users/register", controllers.CreateUser)
+		publicRoutes.POST("/users/login", controllers.LoginUser)
 	}
 	protectedRoutes := router.Group("/api")
 	protectedRoutes.Use(middleware.UserRetriveCookie)
@@ -25,15 +25,16 @@ func main() {
 		library := protectedRoutes.Group("/library")
 		library.Use(middleware.OwnerOnly)
 		{
-			library.POST("/create-library", controllers.CreateLibrary)
+			library.POST("/create", controllers.CreateLibrary)
+			library.POST("/create-admin", controllers.CreateAdmin)
 		}
 
 		admin := protectedRoutes.Group("/admin")
 		admin.Use(middleware.AdminOnly)
 		{
 			admin.POST("/add-book", controllers.AddBook)
-			admin.POST("/remove-book/:id", controllers.RemoveBook)
-			admin.PUT("/update-book/:id", controllers.UpdateBook)
+			admin.DELETE("/:id", controllers.RemoveBook) // Only need to
+			admin.PUT("/:id", controllers.UpdateBook)    // Only need to update with the id
 		}
 	}
 

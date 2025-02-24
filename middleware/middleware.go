@@ -54,7 +54,7 @@ func AdminOnly(c *gin.Context) {
 func ReaderOnly(c *gin.Context) {
 	if nrole != "reader" {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Only admin has the access to do so",
+			"error": "Only reader has the access to do so",
 		})
 		c.Abort()
 		return
@@ -63,6 +63,7 @@ func ReaderOnly(c *gin.Context) {
 }
 func RetriveJwtToken(c *gin.Context) (int, string, string, error) {
 	cookie, err := c.Cookie("Authorise")
+	fmt.Println(cookie)
 	if err != nil {
 		return 0, "", "", errors.New("cookie not found")
 	}

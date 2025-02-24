@@ -4,7 +4,9 @@ import (
 	"lms/backend/controllers"
 	"lms/backend/initializers"
 	"lms/backend/middleware"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,6 +14,14 @@ func main() {
 	initializers.ConnectDatabase()
 
 	router := gin.Default()
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 
 	publicRoutes := router.Group("/api")
 	{
@@ -36,7 +46,8 @@ func main() {
 			admin.DELETE("/:id", controllers.RemoveBook) // Only need to
 			admin.PUT("/:id", controllers.UpdateBook)    // Only need to update with the id
 			admin.GET("/list-requests", controllers.ListRequests)
-			admin.PUT("/handle-request/:id", controllers.HandleRequest) //function to approve or reject issue request
+			admin.PUT("/:id/approve", controllers.ApproveRequest) //function to approve or reject issue request
+			admin.PUT("/:id/reject", controllers.RejectRequest)
 		}
 		reader := protectedRoutes.Group("/reader")
 		reader.Use(middleware.ReaderOnly)

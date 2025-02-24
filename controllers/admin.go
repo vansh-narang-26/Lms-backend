@@ -103,11 +103,8 @@ func AddBook(c *gin.Context) {
 
 	//check for same isbn doesnt exist
 	fmt.Println(bookInput.ISBN)
-	if err := initializers.DB.Where("isbn=?", bookInput.ISBN).Find(&existingBook).Error; err == nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			// "Error":   err.Error(),
-			"Message": "Same isbn already exists u cant add book",
-		})
+	if err := initializers.DB.Where("isbn=?", bookInput.ISBN).First(&existingBook).Error; err == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"Message": "Same ISBN already exists, cannot add book."})
 		return
 	}
 
@@ -131,7 +128,7 @@ func AddBook(c *gin.Context) {
 	}
 
 	//Added the book
-	c.JSON(http.StatusCreated, gin.H{"message": "Book added successfully", "book": newBook, "EmailId": email})
+	c.JSON(http.StatusCreated, gin.H{"message": "Book added successfully", "book": newBook, "email": email})
 }
 func RemoveBook(c *gin.Context) {
 	isbn := c.Param("id")
@@ -145,6 +142,12 @@ func RemoveBook(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No available copies to remove."})
 		return
 	}
+	// if book.TotalCopies <= 1 {
+	// 	initializers.DB.Delete(&book)
+	// 	c.JSON(http.StatusOK, gin.H{"message": "Book removed completely."})
+	// 	return
+	// }
+
 	book.TotalCopies -= 1
 	book.AvailableCopies -= 1
 	initializers.DB.Save(&book)
@@ -185,20 +188,37 @@ func UpdateBook(c *gin.Context) {
 }
 
 func ListRequests(c *gin.Context) {
+	// Getting the admin ID from the context
+	adminID, exists := c.Get("id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+
+	// Fetch the admin details
+	var adminUser models.User
+	if err := initializers.DB.Where("id = ? AND role = ?", adminID, "admin").First(&adminUser).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Admin access required"})
+		return
+	}
+
 	// var onerequest models.RequestEvent
 	var requests []models.RequestEvent
 
-	if err := initializers.DB.Where("request_type=?", "Requested").Find(&requests).Error; err != nil {
+	if err := initializers.DB.
+		Joins("JOIN book_inventories ON request_events.book_id = book_inventories.isbn").
+		Where("book_inventories.lib_id = ? AND request_events.request_type = ?", adminUser.LibID, "Requested").
+		Find(&requests).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"Error":   err.Error(),
-			"Message": "Couldnt find the requests",
+			"error":   err.Error(),
+			"message": "Could not find the requests",
 		})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"Message": requests,
-	})
 
+	c.JSON(http.StatusOK, gin.H{
+		"message": requests,
+	})
 }
 
 type UpdateRequest struct {
@@ -207,7 +227,7 @@ type UpdateRequest struct {
 	ApproverID   *uint      `json:"approver_id,omitempty"`
 }
 
-func HandleRequest(c *gin.Context) {
+func ApproveRequest(c *gin.Context) {
 	adminID, _ := c.Get("id")
 	//	fmt.Println(adminID)
 
@@ -255,8 +275,9 @@ func HandleRequest(c *gin.Context) {
 	}
 
 	//time to update the bookrequest
-	bookexists.RequestType = handlereq.RequestType
-	bookexists.ApprovalDate = &time.Time{}
+	bookexists.RequestType = "Issued"
+	now := time.Now()
+	bookexists.ApprovalDate = &now
 	bookexists.ApproverID = &adminUser.ID
 
 	initializers.DB.Save(&bookexists)
@@ -274,7 +295,8 @@ func HandleRequest(c *gin.Context) {
 		ReaderID:           request.ReaderID,
 		IssueApproverID:    adminUser.ID,
 		IssueStatus:        "Issued",
-		ExpectedReturnDate: time.Now(), //need to change
+		ExpectedReturnDate: time.Now().AddDate(0, 0, 14), // 2 weeks later
+
 	}
 	initializers.DB.Create(&issueReg)
 
@@ -284,13 +306,83 @@ func HandleRequest(c *gin.Context) {
 	})
 
 }
+func RejectRequest(c *gin.Context) {
+	adminID, _ := c.Get("id")
+	//	fmt.Println(adminID)
 
-// IssueID            uint       `gorm:"primaryKey" json:"issue_id"`
-// 	ISBN               string     `json:"isbn"`
-// 	ReaderID           uint       `json:"reader_id"`
-// 	IssueApproverID    uint       `json:"issue_approver_id"`
-// 	IssueStatus        string     `json:"issue_status"` // Issued or Returned
-// 	IssueDate          time.Time  `json:"issue_date"`
-// 	ExpectedReturnDate time.Time  `json:"expected_return_date"`
-// 	ReturnDate         *time.Time `json:"return_date,omitempty"`
-// 	ReturnApproverID   *uint      `json:"return_approver_id,omitempty"`
+	var adminUser models.User
+	if err := initializers.DB.Where("id = ? AND role = ?", adminID, "admin").First(&adminUser).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Admin access required"})
+		return
+	}
+
+	//extract the request id and check its availablity or not
+	requestId := c.Param("id")
+	//fmt.Println(requestId)
+	var request models.RequestEvent
+
+	if err := initializers.DB.Where("req_id=?", requestId).Find(&request).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Error":   err.Error(),
+			"Message": "Couldnot find the request with this id",
+		})
+		return
+	}
+	//time to extract bookId from request id
+	bookId := request.BookID
+	//fmt.Println(bookId)
+
+	var bookexists models.RequestEvent
+	if err := initializers.DB.Where("book_id=?", bookId).Find(&bookexists).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Error":   err.Error(),
+			"Message": "Couldnt find the book id with this isbn",
+		})
+		return
+	}
+
+	// readerID := request.ReaderID
+	// fmt.Println(readerID)
+
+	var handlereq UpdateRequest
+
+	if err := c.ShouldBindJSON(&handlereq); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Error": err.Error(),
+		})
+		return
+	}
+
+	//time to update the bookrequest
+	fmt.Println(handlereq.RequestType)
+	bookexists.RequestType = "Rejected"
+	now := time.Now()
+	bookexists.ApprovalDate = &now
+	bookexists.ApproverID = &adminUser.ID
+
+	initializers.DB.Save(&bookexists)
+	// c.JSON(http.StatusOK, bookexists)
+	c.JSON(http.StatusAccepted, gin.H{
+		"message":      "updation successfully done",
+		"updated book": bookexists,
+	})
+
+	// //now setup the issue registry accordingly
+	// // var IssueReg models.IssueRegistry
+
+	// issueReg := models.IssueRegistry{
+	// 	ISBN:               bookId,
+	// 	ReaderID:           request.ReaderID,
+	// 	IssueApproverID:    adminUser.ID,
+	// 	IssueStatus:        "Rejected",
+	// 	ExpectedReturnDate: time.Now().AddDate(0, 0, 14), // 2 weeks later
+
+	// }
+	// initializers.DB.Create(&issueReg)
+
+	// c.JSON(http.StatusCreated, gin.H{
+	// 	"Message":   "Issue registry created successfully",
+	// 	"Issue reg": issueReg,
+	// })
+
+}
